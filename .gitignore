@@ -5,3 +5,6 @@ build
 .env
 .venv/
 postgres_data/
+**/__pycache__/
+*.tsbuildinfo
+pnpm-lock.yaml
