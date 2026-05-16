@@ -14,15 +14,12 @@ services:
   backend:
     build: ./backend
     container_name: fastapi_app
-    env_file: .env
     ports:
       - "8000:8000"
     volumes:
       - ./backend:/app
     env_file:
       - ./backend/.env
-    environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
     depends_on:
       - db
 
