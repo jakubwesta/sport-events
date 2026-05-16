@@ -2,7 +2,11 @@ from logging.config import fileConfig
 import os
 import sys
 from app.database import Base
-from app.modules.auth.models import User 
+from app.modules.users.models import User 
+from app.modules.locations.models import Location
+from app.modules.categories.models import Category
+from app.modules.events.models import Event
+from app.modules.teams.models import Team, TeamMember
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 
