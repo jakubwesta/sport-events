@@ -1,6 +1,7 @@
 import enum
 
 from sqlalchemy import Column, Integer, String, Enum
+from sqlalchemy.orm import relationship
 from app.database import Base
 
 
@@ -23,3 +24,6 @@ class User(Base):
     last_name = Column(String, nullable=False, server_default="Admin")
     birth_year = Column(Integer, nullable=True, server_default=None) 
     phone_number = Column(String, nullable=True, server_default=None)
+
+    events = relationship("Event", back_populates="owner", cascade="all, delete-orphan")
+    managed_teams = relationship("Team", back_populates="owner", cascade="all, delete-orphan")
