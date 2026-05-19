@@ -4,6 +4,7 @@ from typing import Optional, List
 from app.modules.events.models import EventType, EventStatus
 from app.modules.categories.schemas import CategoryResponse
 from app.modules.locations.schemas import LocationResponse
+from app.modules.participations.schemas import ParticipationResponse
 
 class EventBase(BaseModel):
     title: str
@@ -40,5 +41,10 @@ class EventResponse(EventBase):
     owner_id: int
     category: CategoryResponse
     location: Optional[LocationResponse] = None 
+    
+    model_config = ConfigDict(from_attributes=True)
+
+class EventDetailsResponse(EventResponse):
+    participations: List[ParticipationResponse] = []
     
     model_config = ConfigDict(from_attributes=True)

@@ -41,14 +41,12 @@ class TeamMemberResponse(BaseModel):
 
 class TeamCreate(BaseModel):
     name: str
-    event_id: int
 
 
 class TeamResponse(BaseModel):
     id: int
     name: str
     owner_id: int
-    event_id: int
 
     class Config:
         from_attributes = True

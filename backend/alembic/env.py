@@ -7,6 +7,7 @@ from app.modules.locations.models import Location
 from app.modules.categories.models import Category
 from app.modules.events.models import Event
 from app.modules.teams.models import Team, TeamMember
+from app.modules.participations.models import Participation
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 

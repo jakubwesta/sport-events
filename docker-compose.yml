@@ -1,7 +1,7 @@
 services:
   db:
     image: postgres:15-alpine
-    container_name: postgres_db
+    container_name: sports_events_db
 
     restart: always
     env_file:

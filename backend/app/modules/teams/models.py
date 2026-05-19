@@ -16,10 +16,8 @@ class Team(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False, unique=True)
     owner_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    event_id = Column(Integer, ForeignKey("events.id", ondelete="CASCADE"), nullable=False)
 
     owner = relationship("User", back_populates="managed_teams")
-    event = relationship("Event", back_populates="teams")
     members = relationship("TeamMember", back_populates="team", cascade="all, delete-orphan")
 
 

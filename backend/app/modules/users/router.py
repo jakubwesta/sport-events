@@ -1,9 +1,14 @@
+from app.modules.events.models import Event
+from app.modules.events import schemas as event_schemas
+from app.modules.teams.models import Team, TeamMember, TeamMemberStatus
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 
 from app.database import get_db
 from app.modules.users.models import User, UserRole
+from app.modules.participations.models import Participation, ParticipationStatus
 from app.modules.users.schemas import UserCreate, UserUpdate, UserResponse
 from app.modules.auth.dependencies import get_current_user, require_admin
 from app.modules.auth.utils import hash_password
@@ -30,6 +35,33 @@ def get_user(user_id: int, db: Session = Depends(get_db), current_user: User = D
         raise HTTPException(status_code=404, detail="Użytkownik nie znaleziony")
     return user
 
+
+from sqlalchemy import or_
+
+@router.get("/me/events", response_model=List[event_schemas.EventResponse])
+def get_my_events(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    events = (
+        db.query(Event)
+        .join(Participation, Participation.event_id == Event.id)
+        .outerjoin(TeamMember, TeamMember.team_id == Participation.team_id)
+        .filter(
+            Participation.status == ParticipationStatus.PENDING,
+            or_(
+                Participation.user_id == current_user.id,
+                or_(
+                    TeamMember.user_id == current_user.id,
+                    TeamMember.status == TeamMemberStatus.PENDING
+                )
+            )
+        )
+        .distinct()
+        .all()
+    )
+    
+    return events
 
 @router.patch("/{user_id}", response_model=UserResponse)
 def update_user(user_id: int, user_update: UserUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):

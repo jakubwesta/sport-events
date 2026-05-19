@@ -15,6 +15,7 @@ from app.modules.locations.router import router as location_router
 from app.modules.categories.router import router as category_router
 from app.modules.teams.router import router as teams_router
 from app.modules.events.router import router as events_router
+from app.modules.participations.router import router as participations_router
 from app.database import SessionLocal  
 
 app = FastAPI()
@@ -25,6 +26,7 @@ app.include_router(location_router)
 app.include_router(category_router)
 app.include_router(teams_router)
 app.include_router(events_router)
+app.include_router(participations_router)  
 
 def wait_for_db(retries: int = 10, interval: int = 1):
     print("--- OCZEKIWANIE NA BAZĘ DANYCH ---", flush=True)
