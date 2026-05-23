@@ -1,4 +1,10 @@
+from pathlib import Path
+
+from alembic import command
+from alembic.config import Config
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+import os
 import time
 from sqlalchemy.sql import text
 from sqlalchemy.exc import OperationalError
@@ -19,6 +25,24 @@ from app.modules.participations.router import router as participations_router
 from app.database import SessionLocal  
 
 app = FastAPI()
+
+cors_origins = [
+    origin.strip()
+    for origin in os.getenv(
+        "CORS_ORIGINS",
+        "http://localhost:5173,http://127.0.0.1:5173",
+    ).split(",")
+    if origin.strip()
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=cors_origins,
+    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1)(:\d+)?",
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.include_router(auth_router, prefix="/auth", tags=["Auth"])
 app.include_router(users_router)
@@ -43,14 +67,28 @@ def wait_for_db(retries: int = 10, interval: int = 1):
             db.close()
     return False
 
+def run_migrations():
+    print("--- URUCHAMIANIE MIGRACJI ---", flush=True)
+    root = Path(__file__).resolve().parent.parent
+    alembic_cfg = Config(str(root / "alembic.ini"))
+    command.upgrade(alembic_cfg, "head")
+    print("--- MIGRACJE ZAKOŃCZONE ---", flush=True)
+
 @app.on_event("startup")
 def startup_event():
-    if wait_for_db():
-        from app.seed import seed_admin, seed_categories
-        seed_admin()
-        seed_categories()
-    else:
+    if not wait_for_db():
         print("--- BŁĄD: NIE MOŻNA POŁĄCZYĆ SIĘ Z BAZĄ. SEEDING POMINIĘTY ---", flush=True)
+        return
+
+    try:
+        run_migrations()
+    except Exception as exc:
+        print(f"--- BŁĄD MIGRACJI: {exc} ---", flush=True)
+        return
+
+    from app.seed import seed_admin, seed_categories
+    seed_admin()
+    seed_categories()
 
 @app.get("/")
 def root():

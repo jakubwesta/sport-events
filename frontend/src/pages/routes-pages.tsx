@@ -9,6 +9,8 @@ export { LoginPage } from './Login'
 export { MapPage } from './Map'
 export { RegisterPage } from './Register'
 export { EventsPage } from './Events'
+export { CreateEventPage } from './CreateEvent'
+export { EventDetailsPage } from './EventDetails'
 
 function SimplePage({ title }: { title: string }) {
   return (

@@ -4,4 +4,12 @@ const envSchema = z.object({
   VITE_API_URL: z.url(),
 })
 
-export const env = envSchema.parse(import.meta.env)
+const parsed = envSchema.safeParse(import.meta.env)
+
+if (!parsed.success) {
+  throw new Error(
+    'Missing or invalid VITE_API_URL. Copy frontend/.env.example to frontend/.env and set the API URL.',
+  )
+}
+
+export const env = parsed.data

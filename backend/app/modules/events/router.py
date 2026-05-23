@@ -76,6 +76,15 @@ def update_event(
         raise HTTPException(status_code=403, detail="Brak uprawnień do edycji tego wydarzenia.")
 
     update_data = event_update.model_dump(exclude_unset=True)
+
+    if "location_id" in update_data and update_data["location_id"] is not None:
+        location = db.query(Location).filter(Location.id == update_data["location_id"]).first()
+        if not location:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Lokalizacja o ID {update_data['location_id']} nie istnieje.",
+            )
+
     for key, value in update_data.items():
         setattr(db_event, key, value)
         

@@ -35,6 +35,7 @@ class EventUpdate(BaseModel):
     registration_deadline: Optional[datetime] = None
     price: Optional[float] = None
     is_published: Optional[bool] = None
+    location_id: Optional[int] = None
 
 class EventResponse(EventBase):
     id: int

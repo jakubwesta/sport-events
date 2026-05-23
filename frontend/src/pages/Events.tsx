@@ -1,146 +1,93 @@
-import { useMemo, useState } from "react"
-import { Search } from "lucide-react"
+import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { AlertCircle, Loader2, Plus, Search } from 'lucide-react'
 
-import {
-  type EventCardData,
-  EventCard,
-} from "@/components/events/event-card"
-import { Card, CardContent } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
+import { EventCard } from '@/components/events/event-card'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from '@/components/ui/select'
+import { useCategories } from '@/hooks/use-categories'
+import { useAuth, useIsOrganizer } from '@/hooks/use-auth'
+import { useEvents } from '@/hooks/use-events'
+import { getEventCity } from '@/lib/event-display'
+import type { Event } from '@/schemas'
 
-const CATEGORY_FILTER_OPTIONS = [
-  { value: "all", label: "All" },
-  { value: "running", label: "Running" },
-  { value: "football", label: "Football" },
-  { value: "cycling", label: "Cycling" },
-] as const
+type EventScope = 'all' | 'mine'
 
-const CITY_FILTER_OPTIONS = [
-  { value: "all", label: "All cities" },
-  { value: "wroclaw", label: "Wroclaw" },
-  { value: "warsaw", label: "Warsaw" },
-  { value: "krakow", label: "Krakow" },
-  { value: "gdansk", label: "Gdansk" },
-  { value: "poznan", label: "Poznan" },
-] as const
-
-const MOCK_EVENTS: EventCardData[] = [
-  {
-    id: "1",
-    category: "Running",
-    title: "Wroclaw 10K Run",
-    description:
-      "A popular urban race through the heart of Wroclaw with closed roads, pacers, and finisher medals for all distances.",
-    dateTimeLabel: "15.06.2026 at 09:00",
-    city: "Wroclaw",
-    participantsCurrent: 142,
-    participantsMax: 200,
-  },
-  {
-    id: "2",
-    category: "Football",
-    title: "Amateur Cup — Warsaw",
-    description:
-      "Knockout tournament for recreational teams. Group stage on Saturday, finals on Sunday evening under floodlights.",
-    dateTimeLabel: "22.06.2026 at 10:30",
-    city: "Warsaw",
-    participantsCurrent: 96,
-    participantsMax: 128,
-  },
-  {
-    id: "3",
-    category: "Cycling",
-    title: "Mazovia Gravel Series",
-    description:
-      "Scenic gravel loop with feed stations and mechanical support. GPS route published one week before the event.",
-    dateTimeLabel: "28.06.2026 at 08:00",
-    city: "Warsaw",
-    participantsCurrent: 58,
-    participantsMax: 80,
-  },
-  {
-    id: "4",
-    category: "Running",
-    title: "Krakow Night 5K",
-    description:
-      "Family-friendly evening run around the Old Town. Chip timing and commemorative tech tee for early birds.",
-    dateTimeLabel: "04.07.2026 at 20:00",
-    city: "Krakow",
-    participantsCurrent: 310,
-    participantsMax: 400,
-  },
-  {
-    id: "5",
-    category: "Football",
-    title: "Youth Skills Camp — Gdansk",
-    description:
-      "Three-day camp focusing on technique and small-sided games for players aged 10–14. Led by licensed coaches.",
-    dateTimeLabel: "11.07.2026 at 09:00",
-    city: "Gdansk",
-    participantsCurrent: 24,
-    participantsMax: 30,
-  },
-  {
-    id: "6",
-    category: "Cycling",
-    title: "Poznan City Crit",
-    description:
-      "Fast criterium laps on a closed circuit downtown. Categories for beginners through elite, with live commentary.",
-    dateTimeLabel: "18.07.2026 at 17:45",
-    city: "Poznan",
-    participantsCurrent: 75,
-    participantsMax: 100,
-  },
-]
-
-const categoryKey = (label: string) =>
-  label.toLowerCase().replace(/\s+/g, "-")
-
-function eventMatchesCategory(event: EventCardData, filter: string) {
-  if (filter === "all") return true
-  return categoryKey(event.category) === filter
+function normalizeCity(city: string): string {
+  return city.trim().toLowerCase()
 }
 
-function eventMatchesCity(event: EventCardData, filter: string) {
-  if (filter === "all") return true
-  return event.city.toLowerCase() === filter
-}
-
-function eventMatchesSearch(event: EventCardData, q: string) {
-  const needle = q.trim().toLowerCase()
+function eventMatchesSearch(event: Event, query: string): boolean {
+  const needle = query.trim().toLowerCase()
   if (!needle) return true
+
   return (
     event.title.toLowerCase().includes(needle) ||
-    event.description.toLowerCase().includes(needle) ||
-    event.city.toLowerCase().includes(needle)
+    (event.description ?? '').toLowerCase().includes(needle) ||
+    event.category.name.toLowerCase().includes(needle) ||
+    getEventCity(event).toLowerCase().includes(needle)
   )
 }
 
+function eventMatchesCity(event: Event, cityFilter: string): boolean {
+  if (cityFilter === 'all') return true
+  return normalizeCity(getEventCity(event)) === cityFilter
+}
+
 export function EventsPage() {
-  const [search, setSearch] = useState("")
-  const [category, setCategory] = useState<string>("all")
-  const [city, setCity] = useState<string>("all")
+  const [search, setSearch] = useState('')
+  const [category, setCategory] = useState('all')
+  const [city, setCity] = useState('all')
+  const [eventScope, setEventScope] = useState<EventScope>('all')
+  const { user } = useAuth()
+  const isOrganizer = useIsOrganizer()
+
+  const categoryId = category === 'all' ? undefined : Number(category)
+  const {
+    data: events,
+    isLoading: eventsLoading,
+    error: eventsError,
+    refetch,
+  } = useEvents(categoryId != null ? { category_id: categoryId } : undefined)
+  const { data: categories, isLoading: categoriesLoading } = useCategories()
+
+  const cityOptions = useMemo(() => {
+    const cities = new Set<string>()
+
+    for (const event of events ?? []) {
+      const eventCity = getEventCity(event)
+      if (eventCity !== 'Location TBD') {
+        cities.add(eventCity)
+      }
+    }
+
+    return Array.from(cities).sort((a, b) => a.localeCompare(b))
+  }, [events])
 
   const filtered = useMemo(() => {
-    return MOCK_EVENTS.filter(
-      (e) =>
-        eventMatchesSearch(e, search) &&
-        eventMatchesCategory(e, category) &&
-        eventMatchesCity(e, city)
-    )
-  }, [search, category, city])
+    const showMine = isOrganizer && eventScope === 'mine' && user != null
+
+    return (events ?? [])
+      .filter((event) => (showMine ? event.owner_id === user.id : event.is_published))
+      .filter((event) => eventMatchesSearch(event, search))
+      .filter((event) => eventMatchesCity(event, city))
+  }, [events, search, city, eventScope, isOrganizer, user])
+
+  const isLoading = eventsLoading || categoriesLoading
+  const isMyEventsView = isOrganizer && eventScope === 'mine'
 
   return (
-    <main className="container flex min-h-0 flex-1 flex-col px-4 py-8 sm:px-6">
-      <Card className="mb-8 border-border shadow-sm">
-        <CardContent className="flex flex-col gap-4 pt-6 sm:flex-row sm:items-center">
+    <main className="mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col px-4 py-8 sm:px-6">
+      <Card className="mb-8 border-border py-0 shadow-sm">
+        <CardContent className="flex flex-col gap-4 py-4 sm:flex-row sm:items-center">
           <div className="relative min-w-0 flex-1">
             <Search
               className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
@@ -153,56 +100,103 @@ export function EventsPage() {
               placeholder="Search events..."
               type="search"
               aria-label="Search events"
+              disabled={isLoading}
             />
           </div>
-            <div className="flex w-full flex-col gap-4 sm:w-auto sm:min-w-40 sm:flex-row">
-            <Select value={category} onValueChange={setCategory}>
+          <div className="flex w-full flex-col gap-4 sm:w-auto sm:flex-row sm:items-center">
+            {isOrganizer ? (
+              <Select
+                value={eventScope}
+                onValueChange={(value) => setEventScope(value as EventScope)}
+                disabled={isLoading}
+              >
+                <SelectTrigger
+                  className="w-full sm:w-44"
+                  aria-label="Event scope"
+                >
+                  <SelectValue placeholder="Events" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All events</SelectItem>
+                  <SelectItem value="mine">My events</SelectItem>
+                </SelectContent>
+              </Select>
+            ) : null}
+            <Select value={category} onValueChange={setCategory} disabled={isLoading}>
               <SelectTrigger
-                className="w-full sm:w-40"
+                className="w-full sm:w-44"
                 aria-label="Filter by category"
               >
-                <SelectValue />
+                <SelectValue placeholder="Category" />
               </SelectTrigger>
               <SelectContent>
-                {CATEGORY_FILTER_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
+                <SelectItem value="all">All categories</SelectItem>
+                {(categories ?? []).map((item) => (
+                  <SelectItem key={item.id} value={String(item.id)}>
+                    {item.name}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            <Select value={city} onValueChange={setCity}>
+            <Select value={city} onValueChange={setCity} disabled={isLoading}>
               <SelectTrigger
                 className="w-full sm:w-44"
                 aria-label="Filter by city"
               >
-                <SelectValue />
+                <SelectValue placeholder="City" />
               </SelectTrigger>
               <SelectContent>
-                {CITY_FILTER_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
+                <SelectItem value="all">All cities</SelectItem>
+                {cityOptions.map((item) => (
+                  <SelectItem key={item} value={normalizeCity(item)}>
+                    {item}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            {isOrganizer ? (
+              <Button asChild className="w-full shrink-0 sm:w-auto">
+                <Link to="/events/new">
+                  <Plus className="size-4" aria-hidden />
+                  Create event
+                </Link>
+              </Button>
+            ) : null}
           </div>
         </CardContent>
       </Card>
 
       <div className="mb-6 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
         <h2 className="text-2xl font-bold tracking-tight text-foreground">
-          Upcoming events
+          {isMyEventsView ? 'My events' : 'Upcoming events'}
         </h2>
-        <p className="text-sm text-muted-foreground">
-          Found: {filtered.length}{" "}
-          {filtered.length === 1 ? "event" : "events"}
-        </p>
+        {!isLoading && !eventsError ? (
+          <p className="text-sm text-muted-foreground">
+            Found: {filtered.length} {filtered.length === 1 ? 'event' : 'events'}
+          </p>
+        ) : null}
       </div>
 
-      {filtered.length === 0 ? (
+      {isLoading ? (
+        <div className="flex items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-muted/30 px-4 py-12 text-sm text-muted-foreground">
+          <Loader2 className="size-4 animate-spin" aria-hidden />
+          Loading events...
+        </div>
+      ) : eventsError ? (
+        <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-destructive/40 bg-destructive/5 px-4 py-12 text-center">
+          <div className="flex items-center gap-2 text-sm text-destructive">
+            <AlertCircle className="size-4 shrink-0" aria-hidden />
+            {eventsError.detail || 'Failed to load events.'}
+          </div>
+          <Button type="button" variant="outline" size="sm" onClick={() => void refetch()}>
+            Try again
+          </Button>
+        </div>
+      ) : filtered.length === 0 ? (
         <p className="rounded-xl border border-dashed border-border bg-muted/30 px-4 py-12 text-center text-sm text-muted-foreground">
-          No events match your filters. Try adjusting search or filters.
+          {isMyEventsView
+            ? 'You have no events yet. Create one to get started.'
+            : 'No published events match your filters. Try adjusting search or filters.'}
         </p>
       ) : (
         <ul className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">

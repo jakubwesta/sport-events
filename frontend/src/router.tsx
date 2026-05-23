@@ -1,7 +1,10 @@
 import { createBrowserRouter } from 'react-router-dom'
+import { AuthPageLayout } from '@/components/auth/auth-page-layout'
 import { RootLayout } from '@/layouts/root-layout'
 import Home from '@/pages/Home'
 import {
+  CreateEventPage,
+  EventDetailsPage,
   EventsPage,
   LoginPage,
   MapPage,
@@ -15,10 +18,17 @@ export const router = createBrowserRouter([
     children: [
       { path: '/', element: <Home /> },
       { path: '/events', element: <EventsPage /> },
+      { path: '/events/new', element: <CreateEventPage /> },
+      { path: '/events/:eventId', element: <EventDetailsPage /> },
       { path: '/map', element: <MapPage /> },
       { path: '/results', element: <ResultsPage /> },
-      { path: '/login', element: <LoginPage /> },
-      { path: '/register', element: <RegisterPage /> },
+      {
+        element: <AuthPageLayout />,
+        children: [
+          { path: '/login', element: <LoginPage /> },
+          { path: '/register', element: <RegisterPage /> },
+        ],
+      },
     ],
   },
 ])
