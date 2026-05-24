@@ -131,6 +131,22 @@
 }
 
 /* Leaflet panes use high z-index; keep the map under sticky app chrome (e.g. nav z-50). */
-.map-view .leaflet-container {
+.map-view .map-page-shell {
+  height: calc(100dvh - 6.5rem);
+  min-height: 320px;
+}
+
+.map-view .map-page-shell .leaflet-container,
+.location-picker-map .leaflet-container {
   z-index: 0;
+  height: 100% !important;
+  width: 100%;
+}
+
+.location-picker-map .leaflet-container {
+  min-height: 280px;
+}
+
+.location-picker-map {
+  isolation: isolate;
 }

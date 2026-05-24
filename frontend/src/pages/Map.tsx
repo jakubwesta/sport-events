@@ -1,96 +1,113 @@
 import { useEffect, useMemo, useState } from 'react'
-import L from 'leaflet'
 import {
   MapContainer,
   Marker,
   Popup,
   TileLayer,
+  useMap,
 } from 'react-leaflet'
-import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png'
-import markerIcon from 'leaflet/dist/images/marker-icon.png'
-import markerShadow from 'leaflet/dist/images/marker-shadow.png'
 import 'leaflet/dist/leaflet.css'
+import { AlertCircle, Loader2 } from 'lucide-react'
 
-import { MapFiltersCard } from '@/components/map/map-filters-card'
-import {
-  Card,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+import { useLocations } from '@/hooks/use-locations'
+import { formatLocationLabel } from '@/lib/event-display'
+import { DEFAULT_MAP_CENTER, createVenueIcon } from '@/lib/leaflet'
+import type { Location } from '@/schemas'
 
-/** Default center (Warsaw) — replace with data from your API when available. */
-const DEFAULT_CENTER: [number, number] = [52.2297, 21.0122]
+function getMapCenter(locations: Location[]): [number, number] {
+  if (locations.length === 0) return DEFAULT_MAP_CENTER
+
+  const latitude =
+    locations.reduce((sum, location) => sum + location.latitude, 0) / locations.length
+  const longitude =
+    locations.reduce((sum, location) => sum + location.longitude, 0) / locations.length
+
+  return [latitude, longitude]
+}
+
+function MapResizeHandler() {
+  const map = useMap()
+
+  useEffect(() => {
+    const refresh = () => map.invalidateSize()
+    const timeout = window.setTimeout(refresh, 0)
+    window.addEventListener('resize', refresh)
+
+    return () => {
+      window.clearTimeout(timeout)
+      window.removeEventListener('resize', refresh)
+    }
+  }, [map])
+
+  return null
+}
 
 export function MapPage() {
   const [mounted, setMounted] = useState(false)
+  const { data: locations, isLoading, error } = useLocations()
 
   useEffect(() => {
-    const id = requestAnimationFrame(() => {
-      setMounted(true)
-    })
+    const id = requestAnimationFrame(() => setMounted(true))
     return () => cancelAnimationFrame(id)
   }, [])
 
-  const venueIcon = useMemo(
-    () =>
-      L.icon({
-        iconRetinaUrl: markerIcon2x,
-        iconUrl: markerIcon,
-        shadowUrl: markerShadow,
-        iconSize: [25, 41],
-        iconAnchor: [12, 41],
-        popupAnchor: [1, -34],
-        shadowSize: [41, 41],
-      }),
-    []
+  const venueIcon = useMemo(() => createVenueIcon(), [])
+  const mapCenter = useMemo(
+    () => getMapCenter(locations ?? []),
+    [locations],
   )
+  const mapLocations = locations ?? []
 
   return (
-    <main className="map-view flex min-h-0 flex-1 flex-col px-4 pb-6 pt-6 sm:px-6">
-      <Card className="mx-auto mb-4 w-full max-w-6xl shrink-0 border-border shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-2xl tracking-tight">Map</CardTitle>
-          <CardDescription>
-            Pan, zoom, and tap a marker to open details. Add more markers from
-            your events data.
-          </CardDescription>
-        </CardHeader>
-      </Card>
-
-      <div className="mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col gap-4 lg:flex-row lg:items-stretch">
-        <aside className="w-full shrink-0 lg:max-w-xs lg:self-start">
-          <MapFiltersCard />
-        </aside>
-
-        <div className="relative min-h-[min(60dvh,560px)] flex-1 overflow-hidden rounded-xl border border-border lg:min-h-[min(70dvh,640px)]">
-          {mounted ? (
-            <MapContainer
-              center={DEFAULT_CENTER}
-              zoom={13}
-              className="size-full min-h-[min(60dvh,560px)] lg:min-h-[min(70dvh,640px)]"
-              scrollWheelZoom
-            >
-              <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-              />
-              <Marker position={DEFAULT_CENTER} icon={venueIcon}>
+    <main className="map-view flex flex-1 flex-col px-4 pb-6 pt-6 sm:px-6">
+      <div className="map-page-shell relative mx-auto w-full max-w-6xl overflow-hidden rounded-xl border border-border">
+        {isLoading ? (
+          <div className="flex size-full items-center justify-center gap-2 bg-muted text-sm text-muted-foreground">
+            <Loader2 className="size-4 animate-spin" aria-hidden />
+            Loading locations...
+          </div>
+        ) : error ? (
+          <div className="flex size-full items-center justify-center gap-2 bg-destructive/5 px-4 text-sm text-destructive">
+            <AlertCircle className="size-4 shrink-0" aria-hidden />
+            {error.detail || 'Failed to load locations.'}
+          </div>
+        ) : mounted ? (
+          <MapContainer
+            center={mapCenter}
+            zoom={mapLocations.length === 1 ? 14 : 12}
+            className="absolute inset-0 z-0"
+            style={{ height: '100%', width: '100%' }}
+            scrollWheelZoom
+          >
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
+            <MapResizeHandler />
+            {mapLocations.map((location) => (
+              <Marker
+                key={location.id}
+                position={[location.latitude, location.longitude]}
+                icon={venueIcon}
+              >
                 <Popup>
-                  Example venue — wire this to your sport events backend.
+                  <div className="space-y-1 text-sm">
+                    <p className="font-medium">{formatLocationLabel(location)}</p>
+                    <p className="text-muted-foreground">{location.address}</p>
+                  </div>
                 </Popup>
               </Marker>
-            </MapContainer>
-          ) : (
-            <div
-              className="flex size-full min-h-[min(60dvh,560px)] items-center justify-center bg-muted text-sm text-muted-foreground lg:min-h-[min(70dvh,640px)]"
-              aria-busy="true"
-              aria-live="polite"
-            >
-              Loading map…
-            </div>
-          )}
-        </div>
+            ))}
+          </MapContainer>
+        ) : (
+          <div
+            className="flex size-full items-center justify-center bg-muted text-sm text-muted-foreground"
+            aria-busy="true"
+            aria-live="polite"
+          >
+            Loading map…
+          </div>
+        )}
       </div>
     </main>
   )

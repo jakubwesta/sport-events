@@ -1,44 +1,48 @@
-import { Calendar, MapPin, Users } from "lucide-react"
+import { Link } from 'react-router-dom'
+import { Calendar, MapPin, Tag, Users } from 'lucide-react'
 
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import {
   Card,
   CardContent,
   CardFooter,
   CardTitle,
-} from "@/components/ui/card"
-
-export type EventCardData = {
-  id: string
-  category: string
-  title: string
-  description: string
-  /** Display string, e.g. "15.06.2026 at 09:00" */
-  dateTimeLabel: string
-  city: string
-  participantsCurrent: number
-  participantsMax: number
-}
+} from '@/components/ui/card'
+import {
+  formatEventDateTime,
+  formatEventPrice,
+  getEventCapacityLabel,
+  getEventLocationLabel,
+  getEventStatusBadgeVariant,
+  getEventStatusLabel,
+  getEventTypeLabel,
+} from '@/lib/event-display'
+import type { Event } from '@/schemas'
 
 type EventCardProps = {
-  event: EventCardData
-  onViewDetails?: (event: EventCardData) => void
+  event: Event
 }
 
-export function EventCard({ event, onViewDetails }: EventCardProps) {
+export function EventCard({ event }: EventCardProps) {
+  const statusLabel = getEventStatusLabel(event.status)
+  const statusVariant = getEventStatusBadgeVariant(event.status)
+
   return (
     <Card className="flex h-full flex-col border-border shadow-sm">
       <CardContent className="flex flex-1 flex-col gap-4 pt-6">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <Badge variant="secondary">{event.category}</Badge>
-          <Badge variant="outline">Available spots</Badge>
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge variant="secondary">{event.category.name}</Badge>
+          <Badge variant={statusVariant}>{statusLabel}</Badge>
+          {!event.is_published ? (
+            <Badge variant="outline">Draft</Badge>
+          ) : null}
         </div>
 
         <CardTitle className="text-lg leading-snug">{event.title}</CardTitle>
 
         <p className="line-clamp-3 text-sm leading-relaxed text-muted-foreground">
-          {event.description}
+          {event.description?.trim() || 'No description provided.'}
         </p>
 
         <ul className="mt-auto space-y-2.5 text-sm text-muted-foreground">
@@ -47,34 +51,36 @@ export function EventCard({ event, onViewDetails }: EventCardProps) {
               className="mt-0.5 size-4 shrink-0 text-foreground/70"
               aria-hidden
             />
-            <span>{event.dateTimeLabel}</span>
+            <span>{formatEventDateTime(event.start_date)}</span>
           </li>
           <li className="flex items-start gap-2.5">
             <MapPin
               className="mt-0.5 size-4 shrink-0 text-foreground/70"
               aria-hidden
             />
-            <span>{event.city}</span>
+            <span>{getEventLocationLabel(event)}</span>
           </li>
           <li className="flex items-start gap-2.5">
             <Users
               className="mt-0.5 size-4 shrink-0 text-foreground/70"
               aria-hidden
             />
+            <span>{getEventCapacityLabel(event.max_participants)}</span>
+          </li>
+          <li className="flex items-start gap-2.5">
+            <Tag
+              className="mt-0.5 size-4 shrink-0 text-foreground/70"
+              aria-hidden
+            />
             <span>
-              {event.participantsCurrent} / {event.participantsMax} participants
+              {getEventTypeLabel(event.event_type)} · {formatEventPrice(event.price)}
             </span>
           </li>
         </ul>
       </CardContent>
       <CardFooter className="pt-2">
-        <Button
-          type="button"
-          className="w-full"
-          size="lg"
-          onClick={() => onViewDetails?.(event)}
-        >
-          View details
+        <Button asChild className="w-full" size="lg">
+          <Link to={`/events/${event.id}`}>View details</Link>
         </Button>
       </CardFooter>
     </Card>
