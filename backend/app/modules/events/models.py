@@ -46,4 +46,5 @@ class Event(Base):
     owner_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     owner = relationship("User", back_populates="events")
 
-    participations = relationship("Participation", back_populates="event")  
+    participations = relationship("Participation", back_populates="event")
+    matches = relationship("Match", back_populates="event")

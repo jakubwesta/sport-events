@@ -8,6 +8,8 @@ from app.modules.categories.models import Category
 from app.modules.events.models import Event
 from app.modules.teams.models import Team, TeamMember
 from app.modules.participations.models import Participation
+from app.modules.results.models import Result, TeamScoreResult, IndividualScoreResult, TimedResult
+from app.modules.matches.models import Match
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 
