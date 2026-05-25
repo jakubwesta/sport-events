@@ -21,3 +21,4 @@ class Participation(Base):
     event = relationship("Event", back_populates="participations")
     user = relationship("User")
     team = relationship("Team")
+    results = relationship("Result", back_populates="participation")

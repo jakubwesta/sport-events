@@ -14,6 +14,9 @@ from app.modules.categories.models import Category
 from app.modules.locations.models import Location
 from app.modules.events.models import Event
 from app.modules.teams.models import Team, TeamMember, TeamMemberStatus
+from app.modules.participations.models import Participation
+from app.modules.results.models import Result, IndividualScoreResult, TimedResult
+from app.modules.matches.models import Match
 
 from app.modules.auth.router import router as auth_router
 from app.modules.users.router import router as users_router
@@ -22,6 +25,8 @@ from app.modules.categories.router import router as category_router
 from app.modules.teams.router import router as teams_router
 from app.modules.events.router import router as events_router
 from app.modules.participations.router import router as participations_router
+from app.modules.results.router import router as results_router
+from app.modules.matches.router import router as matches_router
 from app.database import SessionLocal  
 
 app = FastAPI()
@@ -50,7 +55,9 @@ app.include_router(location_router)
 app.include_router(category_router)
 app.include_router(teams_router)
 app.include_router(events_router)
-app.include_router(participations_router)  
+app.include_router(participations_router)
+app.include_router(results_router)
+app.include_router(matches_router)
 
 def wait_for_db(retries: int = 10, interval: int = 1):
     print("--- OCZEKIWANIE NA BAZĘ DANYCH ---", flush=True)
@@ -86,9 +93,10 @@ def startup_event():
         print(f"--- BŁĄD MIGRACJI: {exc} ---", flush=True)
         return
 
-    from app.seed import seed_admin, seed_categories
+    from app.seed import seed_admin, seed_categories, seed_sample_results
     seed_admin()
     seed_categories()
+    seed_sample_results()
 
 @app.get("/")
 def root():
