@@ -22,9 +22,10 @@ import type { Event } from '@/schemas'
 
 type EventCardProps = {
   event: Event
+  canManage?: boolean
 }
 
-export function EventCard({ event }: EventCardProps) {
+export function EventCard({ event, canManage = false }: EventCardProps) {
   const statusLabel = getEventStatusLabel(event.status)
   const statusVariant = getEventStatusBadgeVariant(event.status)
 
@@ -78,8 +79,13 @@ export function EventCard({ event }: EventCardProps) {
           </li>
         </ul>
       </CardContent>
-      <CardFooter className="pt-2">
-        <Button asChild className="w-full" size="lg">
+      <CardFooter className="flex gap-2 pt-2">
+        {canManage ? (
+          <Button asChild variant="secondary" className="flex-1" size="lg">
+            <Link to={`/events/${event.id}/participants`}>View participants</Link>
+          </Button>
+        ) : null}
+        <Button asChild className={canManage ? 'flex-1' : 'w-full'} size="lg">
           <Link to={`/events/${event.id}`}>View details</Link>
         </Button>
       </CardFooter>

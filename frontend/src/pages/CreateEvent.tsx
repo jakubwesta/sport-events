@@ -83,7 +83,7 @@ export function CreateEventPage() {
       return
     }
     if (!isOrganizer) {
-      navigate('/events', { replace: true })
+      navigate('/', { replace: true })
     }
   }, [isReady, isAuthenticated, isOrganizer, navigate])
 
@@ -138,7 +138,7 @@ export function CreateEventPage() {
 
     try {
       await createEvent(toEventCreatePayload(parsed.data, locationId))
-      navigate('/events', { replace: true })
+      navigate('/', { replace: true })
     } catch {
       // API error handled by mutation state
     }
@@ -155,7 +155,7 @@ export function CreateEventPage() {
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 py-8 sm:px-6">
       <Button variant="ghost" size="sm" className="mb-4 w-fit gap-2" asChild>
-        <Link to="/events">
+        <Link to="/">
           <ArrowLeft className="size-4" aria-hidden />
           Back to events
         </Link>

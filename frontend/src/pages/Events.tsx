@@ -202,7 +202,14 @@ export function EventsPage() {
         <ul className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
           {filtered.map((event) => (
             <li key={event.id} className="min-w-0 list-none">
-              <EventCard event={event} />
+              <EventCard
+                event={event}
+                canManage={
+                  isOrganizer &&
+                  user != null &&
+                  (event.owner_id === user.id || user.role === 'ADMIN')
+                }
+              />
             </li>
           ))}
         </ul>

@@ -1,10 +1,10 @@
-import { createBrowserRouter } from 'react-router-dom'
+import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { AuthPageLayout } from '@/components/auth/auth-page-layout'
 import { RootLayout } from '@/layouts/root-layout'
-import Home from '@/pages/Home'
 import {
   CreateEventPage,
   EventDetailsPage,
+  EventParticipantsPage,
   EventsPage,
   LoginPage,
   MapPage,
@@ -16,9 +16,10 @@ export const router = createBrowserRouter([
   {
     element: <RootLayout />,
     children: [
-      { path: '/', element: <Home /> },
-      { path: '/events', element: <EventsPage /> },
+      { path: '/', element: <EventsPage /> },
+      { path: '/events', element: <Navigate to="/" replace /> },
       { path: '/events/new', element: <CreateEventPage /> },
+      { path: '/events/:eventId/participants', element: <EventParticipantsPage /> },
       { path: '/events/:eventId', element: <EventDetailsPage /> },
       { path: '/map', element: <MapPage /> },
       { path: '/results', element: <ResultsPage /> },

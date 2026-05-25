@@ -13,6 +13,7 @@ import {
 import { AuthFormError } from '@/components/auth/auth-form-error'
 import { FormFieldError } from '@/components/auth/form-field-error'
 import { LocationPicker } from '@/components/locations/location-picker'
+import { EventParticipationSection } from '@/components/events/event-participation-section'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -379,7 +380,7 @@ export function EventDetailsPage() {
   const { eventId } = useParams()
   const parsedId = Number(eventId)
   const hasValidId = Number.isFinite(parsedId) && parsedId > 0
-  const { user, isReady } = useAuth()
+  const { user, isReady, isAuthenticated } = useAuth()
   const { data: event, isLoading, error, refetch } = useEvent(hasValidId ? parsedId : null)
 
   const canManage = event ? canManageEvent(event, user?.id, user?.role) : false
@@ -390,7 +391,7 @@ export function EventDetailsPage() {
       <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 py-8 sm:px-6">
         <p className="text-sm text-muted-foreground">Invalid event id.</p>
         <Button variant="link" className="mt-2 w-fit px-0" asChild>
-          <Link to="/events">Back to events</Link>
+          <Link to="/">Back to events</Link>
         </Button>
       </main>
     )
@@ -399,7 +400,7 @@ export function EventDetailsPage() {
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 py-8 sm:px-6">
       <Button variant="ghost" size="sm" className="mb-4 w-fit gap-2" asChild>
-        <Link to="/events">
+        <Link to="/">
           <ArrowLeft className="size-4" aria-hidden />
           Back to events
         </Link>
@@ -424,7 +425,7 @@ export function EventDetailsPage() {
         <div className="rounded-xl border border-dashed border-border bg-muted/30 px-4 py-12 text-center">
           <p className="text-sm text-muted-foreground">This event is not available.</p>
           <Button variant="link" className="mt-2" asChild>
-            <Link to="/events">Back to events</Link>
+            <Link to="/">Back to events</Link>
           </Button>
         </div>
       ) : (
@@ -470,13 +471,11 @@ export function EventDetailsPage() {
             )}
 
             {!canManage ? (
-              <div className="border-t border-border pt-6">
-                <Button asChild>
-                  <Link to="/login" state={{ from: `/events/${event.id}` }}>
-                    Sign in to register
-                  </Link>
-                </Button>
-              </div>
+              <EventParticipationSection
+                event={event}
+                isAuthenticated={isAuthenticated}
+                userId={user?.id}
+              />
             ) : null}
           </CardContent>
         </Card>

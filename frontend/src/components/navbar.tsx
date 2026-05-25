@@ -1,4 +1,4 @@
-import { Link, NavLink, useNavigate } from 'react-router-dom'
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { ChevronDown, LogOut, Menu } from 'lucide-react'
 
 import { ModeToggle } from '@/components/mode-toggle'
@@ -22,6 +22,9 @@ const navLinkClass = ({ isActive }: { isActive: boolean }) =>
       ? 'text-foreground'
       : 'text-muted-foreground hover:text-foreground',
   )
+
+const isEventsRoute = (pathname: string) =>
+  pathname === '/' || pathname === '/events'
 
 function getUserDisplayName(user: User): string {
   const first = user.first_name?.trim()
@@ -90,6 +93,8 @@ function AuthButtons() {
 export function Navbar() {
   const { user, isReady, logout } = useAuth()
   const navigate = useNavigate()
+  const { pathname } = useLocation()
+  const eventsNavActive = isEventsRoute(pathname)
 
   const handleLogout = () => {
     logout()
@@ -112,7 +117,10 @@ export function Navbar() {
           aria-label="Main"
         >
           <Button variant="ghost" size="sm" asChild>
-            <NavLink to="/events" className={navLinkClass}>
+            <NavLink
+              to="/"
+              className={() => navLinkClass({ isActive: eventsNavActive })}
+            >
               Events
             </NavLink>
           </Button>
@@ -141,7 +149,7 @@ export function Navbar() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
               <DropdownMenuItem asChild>
-                <Link to="/events">Events</Link>
+                <Link to="/">Events</Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link to="/map">Map</Link>
