@@ -6,12 +6,26 @@ import { locationSchema } from '@/schemas/location.schema'
 
 const dateTimeSchema = z.coerce.date()
 
+export const participationUserInfoSchema = z.object({
+  id: z.number(),
+  first_name: z.string().nullable().optional(),
+  last_name: z.string().nullable().optional(),
+  email: z.string(),
+})
+
+export const participationTeamInfoSchema = z.object({
+  id: z.number(),
+  name: z.string(),
+})
+
 export const participationSchema = z.object({
   id: z.number(),
   user_id: z.number().nullable().optional(),
   team_id: z.number().nullable().optional(),
   status: participationStatusSchema,
   created_at: dateTimeSchema,
+  user: participationUserInfoSchema.nullable().optional(),
+  team: participationTeamInfoSchema.nullable().optional(),
 })
 
 export const participationCreateSchema = z

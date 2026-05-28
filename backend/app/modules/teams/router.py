@@ -17,34 +17,11 @@ def create_team(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    if team.event_id:
-        event = db.query(event_models.Event).filter(event_models.Event.id == team.event_id).first()
-        
-        if not event:
-            raise HTTPException(status_code=404, detail="Wskazane wydarzenie nie istnieje.")
-            
-        if event.event_type != event_models.EventType.TEAM:
-            raise HTTPException(
-                status_code=400, 
-                detail="Nie można przypisać drużyny do wydarzenia indywidualnego."
-            )
-
-    existing_team = db.query(models.Team).filter(
-        models.Team.name == team.name,
-        models.Team.event_id == team.event_id
-    ).first()
-    
+    existing_team = db.query(models.Team).filter(models.Team.name == team.name).first()
     if existing_team:
-        raise HTTPException(
-            status_code=400, 
-            detail="Drużyna o tej nazwie jest już zapisana na to wydarzenie."
-        )
+        raise HTTPException(status_code=400, detail="A team with this name already exists.")
 
-    db_team = models.Team(
-        name=team.name, 
-        owner_id=current_user.id,
-        event_id=team.event_id
-    )
+    db_team = models.Team(name=team.name, owner_id=current_user.id)
     db.add(db_team)
     db.commit()
     db.refresh(db_team)
@@ -138,6 +115,23 @@ def get_team_members(team_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Nie znaleziono drużyny.")
 
     return db.query(models.TeamMember).filter(models.TeamMember.team_id == team_id).all()
+
+
+@router.delete("/{team_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_team(
+    team_id: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    team = db.query(models.Team).filter(models.Team.id == team_id).first()
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found.")
+
+    if team.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Only the team captain can delete the team.")
+
+    db.delete(team)
+    db.commit()
 
 
 @router.delete("/{team_id}/members/{member_id}", status_code=status.HTTP_204_NO_CONTENT)

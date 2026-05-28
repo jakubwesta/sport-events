@@ -16,10 +16,17 @@ import {
 import { useCategories } from '@/hooks/use-categories'
 import { useAuth, useIsOrganizer } from '@/hooks/use-auth'
 import { useEvents } from '@/hooks/use-events'
-import { getEventCity } from '@/lib/event-display'
-import type { Event } from '@/schemas'
+import { getEventCity, getEventStatusLabel } from '@/lib/event-display'
+import type { Event, EventStatus } from '@/schemas'
 
-type EventScope = 'all' | 'mine'
+const POLISH_CITIES = [
+  'Warszawa', 'Kraków', 'Łódź', 'Wrocław', 'Poznań',
+  'Gdańsk', 'Szczecin', 'Bydgoszcz', 'Lublin', 'Białystok',
+]
+
+const EVENT_STATUSES: EventStatus[] = [
+  'PLANNING', 'REGISTRATION', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'POSTPONED',
+]
 
 function normalizeCity(city: string): string {
   return city.trim().toLowerCase()
@@ -28,7 +35,6 @@ function normalizeCity(city: string): string {
 function eventMatchesSearch(event: Event, query: string): boolean {
   const needle = query.trim().toLowerCase()
   if (!needle) return true
-
   return (
     event.title.toLowerCase().includes(needle) ||
     (event.description ?? '').toLowerCase().includes(needle) ||
@@ -46,7 +52,7 @@ export function EventsPage() {
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState('all')
   const [city, setCity] = useState('all')
-  const [eventScope, setEventScope] = useState<EventScope>('all')
+  const [status, setStatus] = useState('all')
   const { user } = useAuth()
   const isOrganizer = useIsOrganizer()
 
@@ -59,30 +65,15 @@ export function EventsPage() {
   } = useEvents(categoryId != null ? { category_id: categoryId } : undefined)
   const { data: categories, isLoading: categoriesLoading } = useCategories()
 
-  const cityOptions = useMemo(() => {
-    const cities = new Set<string>()
-
-    for (const event of events ?? []) {
-      const eventCity = getEventCity(event)
-      if (eventCity !== 'Location TBD') {
-        cities.add(eventCity)
-      }
-    }
-
-    return Array.from(cities).sort((a, b) => a.localeCompare(b))
-  }, [events])
-
   const filtered = useMemo(() => {
-    const showMine = isOrganizer && eventScope === 'mine' && user != null
-
     return (events ?? [])
-      .filter((event) => (showMine ? event.owner_id === user.id : event.is_published))
+      .filter((event) => event.is_published)
       .filter((event) => eventMatchesSearch(event, search))
       .filter((event) => eventMatchesCity(event, city))
-  }, [events, search, city, eventScope, isOrganizer, user])
+      .filter((event) => status === 'all' || event.status === status)
+  }, [events, search, city, status])
 
   const isLoading = eventsLoading || categoriesLoading
-  const isMyEventsView = isOrganizer && eventScope === 'mine'
 
   return (
     <main className="mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col px-4 py-8 sm:px-6">
@@ -103,30 +94,9 @@ export function EventsPage() {
               disabled={isLoading}
             />
           </div>
-          <div className="flex w-full flex-col gap-4 sm:w-auto sm:flex-row sm:items-center">
-            {isOrganizer ? (
-              <Select
-                value={eventScope}
-                onValueChange={(value) => setEventScope(value as EventScope)}
-                disabled={isLoading}
-              >
-                <SelectTrigger
-                  className="w-full sm:w-44"
-                  aria-label="Event scope"
-                >
-                  <SelectValue placeholder="Events" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All events</SelectItem>
-                  <SelectItem value="mine">My events</SelectItem>
-                </SelectContent>
-              </Select>
-            ) : null}
+          <div className="flex w-full flex-wrap gap-3 sm:w-auto sm:items-center">
             <Select value={category} onValueChange={setCategory} disabled={isLoading}>
-              <SelectTrigger
-                className="w-full sm:w-44"
-                aria-label="Filter by category"
-              >
+              <SelectTrigger className="w-full sm:w-40" aria-label="Filter by category">
                 <SelectValue placeholder="Category" />
               </SelectTrigger>
               <SelectContent>
@@ -139,17 +109,27 @@ export function EventsPage() {
               </SelectContent>
             </Select>
             <Select value={city} onValueChange={setCity} disabled={isLoading}>
-              <SelectTrigger
-                className="w-full sm:w-44"
-                aria-label="Filter by city"
-              >
+              <SelectTrigger className="w-full sm:w-36" aria-label="Filter by city">
                 <SelectValue placeholder="City" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All cities</SelectItem>
-                {cityOptions.map((item) => (
-                  <SelectItem key={item} value={normalizeCity(item)}>
-                    {item}
+                {POLISH_CITIES.map((c) => (
+                  <SelectItem key={c} value={normalizeCity(c)}>
+                    {c}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={status} onValueChange={setStatus} disabled={isLoading}>
+              <SelectTrigger className="w-full sm:w-40" aria-label="Filter by status">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All statuses</SelectItem>
+                {EVENT_STATUSES.map((s) => (
+                  <SelectItem key={s} value={s}>
+                    {getEventStatusLabel(s)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -167,12 +147,10 @@ export function EventsPage() {
       </Card>
 
       <div className="mb-6 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-        <h2 className="text-2xl font-bold tracking-tight text-foreground">
-          {isMyEventsView ? 'My events' : 'Upcoming events'}
-        </h2>
+        <h2 className="text-2xl font-bold tracking-tight text-foreground">Events</h2>
         {!isLoading && !eventsError ? (
           <p className="text-sm text-muted-foreground">
-            Found: {filtered.length} {filtered.length === 1 ? 'event' : 'events'}
+            {filtered.length} {filtered.length === 1 ? 'event' : 'events'} found
           </p>
         ) : null}
       </div>
@@ -194,12 +172,10 @@ export function EventsPage() {
         </div>
       ) : filtered.length === 0 ? (
         <p className="rounded-xl border border-dashed border-border bg-muted/30 px-4 py-12 text-center text-sm text-muted-foreground">
-          {isMyEventsView
-            ? 'You have no events yet. Create one to get started.'
-            : 'No published events match your filters. Try adjusting search or filters.'}
+          No events match your filters.
         </p>
       ) : (
-        <ul className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <ul className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {filtered.map((event) => (
             <li key={event.id} className="min-w-0 list-none">
               <EventCard

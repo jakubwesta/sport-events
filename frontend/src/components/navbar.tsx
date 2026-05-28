@@ -1,5 +1,5 @@
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
-import { ChevronDown, LogOut, Menu } from 'lucide-react'
+import { CalendarDays, ChevronDown, LogOut, Menu, Shield, UserCog } from 'lucide-react'
 
 import { ModeToggle } from '@/components/mode-toggle'
 import { Button } from '@/components/ui/button'
@@ -65,6 +65,30 @@ function UserMenu({ user, onLogout }: UserMenuProps) {
             <span className="truncate text-xs text-muted-foreground">{user.email}</span>
           </div>
         </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link to="/profile">
+            <UserCog className="size-4" />
+            Edit profile
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link to="/my-events">
+            <CalendarDays className="size-4" />
+            My events
+          </Link>
+        </DropdownMenuItem>
+        {user.role === 'ADMIN' ? (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem asChild>
+              <Link to="/admin">
+                <Shield className="size-4" />
+                Admin panel
+              </Link>
+            </DropdownMenuItem>
+          </>
+        ) : null}
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={onLogout}>
           <LogOut className="size-4" />
@@ -159,6 +183,30 @@ export function Navbar() {
               </DropdownMenuItem>
               {showUserMenu ? (
                 <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link to="/profile">
+                      <UserCog className="size-4" />
+                      Edit profile
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/my-events">
+                      <CalendarDays className="size-4" />
+                      My events
+                    </Link>
+                  </DropdownMenuItem>
+                  {user?.role === 'ADMIN' ? (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem asChild>
+                        <Link to="/admin">
+                          <Shield className="size-4" />
+                          Admin panel
+                        </Link>
+                      </DropdownMenuItem>
+                    </>
+                  ) : null}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout}>
                     <LogOut className="size-4" />

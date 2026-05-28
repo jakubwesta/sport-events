@@ -23,17 +23,45 @@ class TeamMemberCreate(BaseModel):
         return self
 
 
+class TeamMemberUserInfo(BaseModel):
+    id: int
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    email: str
+
+    class Config:
+        from_attributes = True
+
+
 class TeamMemberResponse(BaseModel):
     id: int
     status: TeamMemberStatus
     user_id: Optional[int] = None
+    # Stored on the row for ghost members
     first_name: Optional[str] = None
     last_name: Optional[str] = None
+    # Populated from the ORM relationship when user_id is set
+    user: Optional[TeamMemberUserInfo] = None
 
     @computed_field
     @property
     def is_ghost(self) -> bool:
         return self.user_id is None
+
+    @computed_field
+    @property
+    def display_first_name(self) -> Optional[str]:
+        return self.first_name or (self.user.first_name if self.user else None)
+
+    @computed_field
+    @property
+    def display_last_name(self) -> Optional[str]:
+        return self.last_name or (self.user.last_name if self.user else None)
+
+    @computed_field
+    @property
+    def display_email(self) -> Optional[str]:
+        return self.user.email if self.user else None
 
     class Config:
         from_attributes = True

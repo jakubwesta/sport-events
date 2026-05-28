@@ -19,7 +19,16 @@ export const teamMemberSchema = z.object({
   user_id: z.number().nullable().optional(),
   first_name: z.string().nullable().optional(),
   last_name: z.string().nullable().optional(),
+  user: z.object({
+    id: z.number(),
+    first_name: z.string().nullable().optional(),
+    last_name: z.string().nullable().optional(),
+    email: z.string(),
+  }).nullable().optional(),
   is_ghost: z.boolean().optional(),
+  display_first_name: z.string().nullable().optional(),
+  display_last_name: z.string().nullable().optional(),
+  display_email: z.string().nullable().optional(),
 })
 
 export const teamMemberCreateSchema = z

@@ -16,3 +16,4 @@ export function createVenueIcon() {
     shadowSize: [41, 41],
   })
 }
+

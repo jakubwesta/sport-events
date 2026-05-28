@@ -27,17 +27,21 @@ export function useTeamMutations() {
     ({ teamId, memberId }: { teamId: number; memberId: number }) =>
       teamsApi.removeMember(teamId, memberId),
   )
+  const deleteTeamMutation = useMutation((teamId: number) => teamsApi.deleteTeam(teamId))
 
   return {
     createTeam: createMutation.mutate,
     addMember: addMemberMutation.mutate,
     removeMember: removeMemberMutation.mutate,
+    deleteTeam: deleteTeamMutation.mutate,
     isCreating: createMutation.isLoading,
     isAddingMember: addMemberMutation.isLoading,
     isRemovingMember: removeMemberMutation.isLoading,
+    isDeletingTeam: deleteTeamMutation.isLoading,
     createError: createMutation.error,
     addMemberError: addMemberMutation.error,
     removeMemberError: removeMemberMutation.error,
+    deleteTeamError: deleteTeamMutation.error,
   }
 }
 
@@ -45,10 +49,16 @@ export function useParticipationMutations() {
   const markAsPaidMutation = useMutation((participationId: number) =>
     participationsApi.markAsPaid(participationId),
   )
+  const withdrawMutation = useMutation((participationId: number) =>
+    participationsApi.withdraw(participationId),
+  )
 
   return {
     markAsPaid: markAsPaidMutation.mutate,
+    withdraw: withdrawMutation.mutate,
     isMarkingAsPaid: markAsPaidMutation.isLoading,
+    isWithdrawing: withdrawMutation.isLoading,
     markAsPaidError: markAsPaidMutation.error,
+    withdrawError: withdrawMutation.error,
   }
 }

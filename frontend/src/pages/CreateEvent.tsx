@@ -74,7 +74,6 @@ export function CreateEventPage() {
   const [status, setStatus] = useState<EventStatus>('PLANNING')
   const [categoryId, setCategoryId] = useState('')
   const [location, setLocation] = useState<LocationPickerValue>(emptyLocationPickerValue())
-  const [isPublished, setIsPublished] = useState(false)
 
   useEffect(() => {
     if (!isReady) return
@@ -108,7 +107,7 @@ export function CreateEventPage() {
       max_participants: getFormValue(form, 'max_participants'),
       min_team_size: getFormValue(form, 'min_team_size'),
       max_team_size: getFormValue(form, 'max_team_size'),
-      is_published: isPublished,
+      is_published: true,
       category_id: categoryId,
     })
 
@@ -165,7 +164,7 @@ export function CreateEventPage() {
         <CardHeader>
           <CardTitle className="text-2xl tracking-tight">Create event</CardTitle>
           <CardDescription>
-            Fill in the details below. The event will be visible to users once published.
+            Fill in the details below. The event will be published and visible to users immediately.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -343,21 +342,6 @@ export function CreateEventPage() {
                 <FormFieldError message={fieldErrors.max_team_size} />
               </div>
             </div>
-
-            <div className="flex items-center gap-2">
-              <input
-                id="is_published"
-                name="is_published"
-                type="checkbox"
-                checked={isPublished}
-                onChange={(e) => setIsPublished(e.target.checked)}
-                className="size-4 rounded border-input"
-              />
-              <Label htmlFor="is_published" className="font-normal">
-                Publish event (visible on the events page)
-              </Label>
-            </div>
-            <FormFieldError message={fieldErrors.is_published} />
 
             <Button type="submit" size="lg" className="w-full" disabled={isCreating || isLoading}>
               {isCreating ? 'Creating…' : 'Create event'}

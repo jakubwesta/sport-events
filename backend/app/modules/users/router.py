@@ -48,13 +48,10 @@ def get_my_events(
         .join(Participation, Participation.event_id == Event.id)
         .outerjoin(TeamMember, TeamMember.team_id == Participation.team_id)
         .filter(
-            Participation.status == ParticipationStatus.PENDING,
+            Participation.status.in_([ParticipationStatus.PENDING, ParticipationStatus.ACCEPTED]),
             or_(
                 Participation.user_id == current_user.id,
-                or_(
-                    TeamMember.user_id == current_user.id,
-                    TeamMember.status == TeamMemberStatus.PENDING
-                )
+                TeamMember.user_id == current_user.id,
             )
         )
         .distinct()

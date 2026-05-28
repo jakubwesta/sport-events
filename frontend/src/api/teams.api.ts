@@ -59,6 +59,14 @@ export const teamsApi = {
       throw parseApiError(error)
     }
   },
+
+  async deleteTeam(teamId: number): Promise<void> {
+    try {
+      await api.delete(`/teams/${teamId}`)
+    } catch (error) {
+      throw parseApiError(error)
+    }
+  },
 }
 
 export const participationsApi = {
@@ -66,6 +74,14 @@ export const participationsApi = {
     try {
       const response = await api.patch(`/participations/${participationId}/pay`)
       return parseResponse(participationSchema, response.data)
+    } catch (error) {
+      throw parseApiError(error)
+    }
+  },
+
+  async withdraw(participationId: number): Promise<void> {
+    try {
+      await api.delete(`/participations/${participationId}`)
     } catch (error) {
       throw parseApiError(error)
     }

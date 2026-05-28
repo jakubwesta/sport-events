@@ -88,3 +88,22 @@ export function getEventStatusBadgeVariant(
       return 'outline'
   }
 }
+
+export function getEventStatusBadgeClass(status: EventStatus): string {
+  switch (status) {
+    case 'PLANNING':
+      return 'border-border bg-muted/60 text-muted-foreground'
+    case 'REGISTRATION':
+      return 'border-green-500/30 bg-green-500/10 text-green-700 dark:text-green-400'
+    case 'IN_PROGRESS':
+      return 'border-orange-500/30 bg-orange-500/10 text-orange-700 dark:text-orange-400'
+    case 'COMPLETED':
+      return 'border-sky-500/30 bg-sky-500/10 text-sky-700 dark:text-sky-400'
+    case 'CANCELLED':
+      return 'border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-400'
+    case 'POSTPONED':
+      return 'border-yellow-500/30 bg-yellow-500/10 text-yellow-700 dark:text-yellow-400'
+    default:
+      return 'border-border text-foreground'
+  }
+}

@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useEventMutations, useEventParticipations } from '@/hooks/use-events'
-import { useTeams } from '@/hooks/use-teams'
+import { useParticipationMutations, useTeams } from '@/hooks/use-teams'
 import type { Event, Participation, ParticipationStatus } from '@/schemas'
 
 const participationStatusLabels: Record<ParticipationStatus, string> = {
@@ -55,8 +55,9 @@ export function EventParticipationSection({
   const { data: participations, isLoading, refetch } = useEventParticipations(event.id)
   const { data: teams, isLoading: teamsLoading } = useTeams()
   const { participate, isParticipating, participateError } = useEventMutations()
+  const { withdraw, isWithdrawing, withdrawError } = useParticipationMutations()
   const [teamId, setTeamId] = useState('')
-  const [successMessage, setSuccessMessage] = useState<string | null>(null)
+  const [confirmWithdraw, setConfirmWithdraw] = useState(false)
 
   const ownedTeams = useMemo(
     () => (teams ?? []).filter((team) => team.owner_id === userId),
@@ -76,8 +77,6 @@ export function EventParticipationSection({
 
   const handleRegister = async () => {
     if (!userId) return
-    setSuccessMessage(null)
-
     const payload =
       event.event_type === 'INDIVIDUAL'
         ? { user_id: userId }
@@ -86,9 +85,19 @@ export function EventParticipationSection({
     try {
       await participate({ eventId: event.id, data: payload })
       await refetch()
-      setSuccessMessage('Your registration has been submitted.')
     } catch {
       // Error shown via participateError
+    }
+  }
+
+  const handleWithdraw = async () => {
+    if (!existingParticipation) return
+    try {
+      await withdraw(existingParticipation.id)
+      await refetch()
+      setConfirmWithdraw(false)
+    } catch {
+      // Error shown via withdrawError
     }
   }
 
@@ -115,11 +124,52 @@ export function EventParticipationSection({
 
   if (existingParticipation) {
     return (
-      <div className="space-y-2 border-t border-border pt-6">
-        <p className="text-sm font-medium text-foreground">You are registered for this event</p>
-        <Badge variant="secondary">
-          {participationStatusLabels[existingParticipation.status]}
-        </Badge>
+      <div className="space-y-3 border-t border-border pt-6">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="space-y-1">
+            <p className="text-sm font-medium text-foreground">You are registered for this event</p>
+            <Badge variant="secondary">
+              {participationStatusLabels[existingParticipation.status]}
+            </Badge>
+          </div>
+        </div>
+
+        {withdrawError ? <AuthFormError message={withdrawError.detail ?? null} /> : null}
+
+        {registrationOpen ? (
+          confirmWithdraw ? (
+            <div className="flex flex-wrap items-center gap-3">
+              <p className="text-sm text-muted-foreground">Cancel your registration?</p>
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                disabled={isWithdrawing}
+                onClick={() => void handleWithdraw()}
+              >
+                {isWithdrawing ? 'Withdrawing…' : 'Yes, withdraw'}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setConfirmWithdraw(false)}
+              >
+                Keep registration
+              </Button>
+            </div>
+          ) : (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="text-muted-foreground hover:border-destructive/50 hover:text-destructive"
+              onClick={() => setConfirmWithdraw(true)}
+            >
+              Withdraw registration
+            </Button>
+          )
+        ) : null}
       </div>
     )
   }
@@ -147,16 +197,15 @@ export function EventParticipationSection({
 
       <AuthFormError message={participateError?.detail ?? null} />
 
-      {successMessage ? (
-        <p className="text-sm text-foreground">{successMessage}</p>
-      ) : null}
-
       {event.event_type === 'TEAM' ? (
         <div className="space-y-2">
           <Label htmlFor="participation_team">Team</Label>
           {ownedTeams.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              You need to create a team before registering for a team event.
+              You need to create a team before registering for a team event.{' '}
+              <Link to="/my-events" className="underline underline-offset-4 hover:text-foreground">
+                Create one in My Events.
+              </Link>
             </p>
           ) : (
             <Select value={teamId} onValueChange={setTeamId}>

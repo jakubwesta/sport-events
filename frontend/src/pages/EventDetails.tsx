@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   AlertCircle,
   ArrowLeft,
   Calendar,
+  ExternalLink,
   Loader2,
   MapPin,
   Tag,
+  Trash2,
   Users,
 } from 'lucide-react'
 
@@ -41,7 +43,7 @@ import {
   getEventCapacityLabel,
   getEventLocationAddress,
   getEventLocationLabel,
-  getEventStatusBadgeVariant,
+  getEventStatusBadgeClass,
   getEventStatusLabel,
   getEventTypeLabel,
 } from '@/lib/event-display'
@@ -81,14 +83,15 @@ function canManageEvent(event: Event, userId: number | undefined, role: string |
 }
 
 function EventOverview({ event }: { event: Event }) {
-  const statusVariant = getEventStatusBadgeVariant(event.status)
   const locationAddress = getEventLocationAddress(event)
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-2">
         <Badge variant="secondary">{event.category.name}</Badge>
-        <Badge variant={statusVariant}>{getEventStatusLabel(event.status)}</Badge>
+        <Badge variant="outline" className={getEventStatusBadgeClass(event.status)}>
+          {getEventStatusLabel(event.status)}
+        </Badge>
         <Badge variant="outline">{getEventTypeLabel(event.event_type)}</Badge>
         {!event.is_published ? <Badge variant="outline">Draft</Badge> : null}
       </div>
@@ -187,10 +190,12 @@ function EventOverview({ event }: { event: Event }) {
 type EventEditFormProps = {
   event: Event
   onSaved: () => Promise<unknown>
+  onDeleted: () => void
 }
 
-function EventEditForm({ event, onSaved }: EventEditFormProps) {
-  const { updateEvent, isUpdating, updateError } = useEventMutations()
+function EventEditForm({ event, onSaved, onDeleted }: EventEditFormProps) {
+  const { updateEvent, deleteEvent, isUpdating, isDeleting, updateError } = useEventMutations()
+  const [confirmDelete, setConfirmDelete] = useState(false)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [locationErrors, setLocationErrors] = useState<Record<string, string>>({})
   const [formError, setFormError] = useState<string | null>(null)
@@ -198,12 +203,9 @@ function EventEditForm({ event, onSaved }: EventEditFormProps) {
   const [location, setLocation] = useState<LocationPickerValue>(
     locationToPickerValue(event.location),
   )
-  const [isPublished, setIsPublished] = useState(event.is_published)
-
   useEffect(() => {
     setStatus(event.status)
     setLocation(locationToPickerValue(event.location))
-    setIsPublished(event.is_published)
   }, [event])
 
   const handleSubmit = async (formEvent: React.FormEvent<HTMLFormElement>) => {
@@ -220,7 +222,7 @@ function EventEditForm({ event, onSaved }: EventEditFormProps) {
       price: getFormValue(form, 'price'),
       start_date: getFormValue(form, 'start_date'),
       registration_deadline: getFormValue(form, 'registration_deadline'),
-      is_published: isPublished,
+      is_published: true,
     })
 
     if (!parsed.success) {
@@ -354,24 +356,57 @@ function EventEditForm({ event, onSaved }: EventEditFormProps) {
         <FormFieldError message={fieldErrors.price} />
       </div>
 
-      <div className="flex items-center gap-2">
-        <input
-          id="is_published"
-          name="is_published"
-          type="checkbox"
-          checked={isPublished}
-          onChange={(e) => setIsPublished(e.target.checked)}
-          className="size-4 rounded border-input"
-        />
-        <Label htmlFor="is_published" className="font-normal">
-          Publish event (visible on the events page)
-        </Label>
+      <div className="flex flex-wrap gap-3">
+        <Button type="submit" size="lg" className="flex-1 sm:flex-none" disabled={isUpdating || isDeleting}>
+          {isUpdating ? 'Saving…' : 'Save changes'}
+        </Button>
+        <Button asChild variant="outline" size="lg" className="flex-1 sm:flex-none gap-2">
+          <Link to={`/results?eventId=${event.id}`}>
+            <ExternalLink className="size-4" aria-hidden />
+            View results
+          </Link>
+        </Button>
       </div>
-      <FormFieldError message={fieldErrors.is_published} />
 
-      <Button type="submit" size="lg" className="w-full sm:w-auto" disabled={isUpdating}>
-        {isUpdating ? 'Saving…' : 'Save changes'}
-      </Button>
+      <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 space-y-3">
+        <p className="text-sm font-medium text-destructive">Danger zone</p>
+        {confirmDelete ? (
+          <div className="flex flex-wrap items-center gap-3">
+            <p className="text-sm text-muted-foreground">Are you sure? This cannot be undone.</p>
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              disabled={isDeleting}
+              onClick={async () => {
+                await deleteEvent(event.id)
+                onDeleted()
+              }}
+            >
+              {isDeleting ? 'Deleting…' : 'Yes, delete event'}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setConfirmDelete(false)}
+            >
+              Cancel
+            </Button>
+          </div>
+        ) : (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="gap-2 border-destructive/40 text-destructive hover:bg-destructive/10"
+            onClick={() => setConfirmDelete(true)}
+          >
+            <Trash2 className="size-4" aria-hidden />
+            Delete event
+          </Button>
+        )}
+      </div>
     </form>
   )
 }
@@ -381,6 +416,7 @@ export function EventDetailsPage() {
   const parsedId = Number(eventId)
   const hasValidId = Number.isFinite(parsedId) && parsedId > 0
   const { user, isReady, isAuthenticated } = useAuth()
+  const navigate = useNavigate()
   const { data: event, isLoading, error, refetch } = useEvent(hasValidId ? parsedId : null)
 
   const canManage = event ? canManageEvent(event, user?.id, user?.role) : false
@@ -464,10 +500,22 @@ export function EventDetailsPage() {
                     </p>
                   ) : null}
                 </div>
-                <EventEditForm event={event} onSaved={refetch} />
+                <EventEditForm
+                  event={event}
+                  onSaved={refetch}
+                  onDeleted={() => navigate('/')}
+                />
               </>
             ) : (
-              <EventOverview event={event} />
+              <>
+                <EventOverview event={event} />
+                <Button asChild variant="outline" className="gap-2 w-fit">
+                  <Link to={`/results?eventId=${event.id}`}>
+                    <ExternalLink className="size-4" aria-hidden />
+                    View results
+                  </Link>
+                </Button>
+              </>
             )}
 
             {!canManage ? (

@@ -93,10 +93,10 @@ def startup_event():
         print(f"--- BŁĄD MIGRACJI: {exc} ---", flush=True)
         return
 
-    from app.seed import seed_admin, seed_categories, seed_sample_results
+    from app.seed import seed_admin, seed_categories, seed_sample_data
     seed_admin()
     seed_categories()
-    seed_sample_results()
+    seed_sample_data()
 
 @app.get("/")
 def root():
