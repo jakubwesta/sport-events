@@ -18,6 +18,7 @@ export function useAuth() {
   const isAuthenticated = useAuthStore(selectIsAuthenticated)
   const initialize = useAuthStore((s) => s.initialize)
   const login = useAuthStore((s) => s.login)
+  const loginWithGoogle = useAuthStore((s) => s.loginWithGoogle)
   const register = useAuthStore((s) => s.register)
   const logout = useAuthStore((s) => s.logout)
   const refreshUser = useAuthStore((s) => s.refreshUser)
@@ -50,6 +51,7 @@ export function useAuth() {
     error,
     isAuthenticated,
     login: (data: LoginRequest) => login(data),
+    loginWithGoogle: (idToken: string) => loginWithGoogle(idToken),
     register: (data: RegisterRequest) => register(data),
     logout,
     refreshUser,

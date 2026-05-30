@@ -5,7 +5,14 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.modules.users.models import User
 from app.modules.users.schemas import UserResponse, UserRole
-from app.modules.auth.schemas import RegisterRequest, LoginRequest, TokenResponse
+from app.modules.auth.google import GOOGLE_CLIENT_ID, verify_google_id_token
+from app.modules.auth.google_auth import upsert_user_from_google
+from app.modules.auth.schemas import (
+    GoogleLoginRequest,
+    RegisterRequest,
+    LoginRequest,
+    TokenResponse,
+)
 from app.modules.auth.utils import hash_password, verify_password, create_access_token
 from app.modules.auth.dependencies import get_current_user
 
@@ -38,8 +45,8 @@ def register(data: RegisterRequest, db: Session = Depends(get_db)):
 
 @router.post("/login", response_model=TokenResponse)
 def login(
-    data: OAuth2PasswordRequestForm = Depends(),  
-    db: Session = Depends(get_db)
+    data: OAuth2PasswordRequestForm = Depends(),
+    db: Session = Depends(get_db),
 ):
     user = db.query(User).filter(User.email == data.username).first()
     if not user or not verify_password(data.password, user.hashed_password):
@@ -49,7 +56,35 @@ def login(
         )
 
     token = create_access_token(data={"sub": str(user.id), "role": user.role.value})
-    
+
     return TokenResponse(access_token=token, token_type="bearer")
 
 
+def _google_login_response(db: Session, payload: dict) -> TokenResponse:
+    user = upsert_user_from_google(db, payload)
+    token = create_access_token(data={"sub": str(user.id), "role": user.role.value})
+    return TokenResponse(access_token=token, token_type="bearer")
+
+
+@router.post("/google", response_model=TokenResponse)
+def login_with_google(data: GoogleLoginRequest, db: Session = Depends(get_db)):
+    if not GOOGLE_CLIENT_ID:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Google sign-in is not configured",
+        )
+
+    try:
+        payload = verify_google_id_token(data.id_token)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid Google token",
+        )
+    except RuntimeError:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Google sign-in is not configured",
+        )
+
+    return _google_login_response(db, payload)

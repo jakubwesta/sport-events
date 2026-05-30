@@ -17,6 +17,7 @@ class User(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String, unique=True, nullable=False, index=True)
+    google_sub = Column(String, unique=True, nullable=True, index=True)
     hashed_password = Column(String, nullable=False)
     role = Column(Enum(UserRole), nullable=False, default=UserRole.USER)
 

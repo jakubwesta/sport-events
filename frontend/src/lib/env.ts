@@ -2,6 +2,7 @@ import { z } from 'zod'
 
 const envSchema = z.object({
   VITE_API_URL: z.url(),
+  VITE_GOOGLE_CLIENT_ID: z.string().optional(),
 })
 
 const parsed = envSchema.safeParse(import.meta.env)
@@ -13,3 +14,5 @@ if (!parsed.success) {
 }
 
 export const env = parsed.data
+
+export const googleClientId = env.VITE_GOOGLE_CLIENT_ID?.trim() || undefined

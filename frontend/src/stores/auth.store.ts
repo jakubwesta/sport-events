@@ -16,6 +16,7 @@ type AuthState = {
   setUser: (user: User | null) => void
   initialize: () => Promise<void>
   login: (data: LoginRequest) => Promise<void>
+  loginWithGoogle: (idToken: string) => Promise<void>
   register: (data: RegisterRequest) => Promise<User>
   logout: () => void
   refreshUser: () => Promise<User | null>
@@ -101,6 +102,26 @@ export const useAuthStore = create<AuthState>()(
             })
           } catch (error) {
             const message = toErrorMessage(error, 'Login failed')
+            set({ error: message })
+            throw error
+          } finally {
+            set({ isSubmitting: false })
+          }
+        },
+
+        loginWithGoogle: async (idToken) => {
+          set({ isSubmitting: true, error: null })
+          try {
+            const { access_token } = await authApi.loginWithGoogle(idToken)
+            setStoredToken(access_token)
+            const fetchedUser = await usersApi.getMe()
+            set({
+              token: access_token,
+              user: fetchedUser,
+              isInitialized: true,
+            })
+          } catch (error) {
+            const message = toErrorMessage(error, 'Google sign-in failed')
             set({ error: message })
             throw error
           } finally {

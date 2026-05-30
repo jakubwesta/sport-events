@@ -19,6 +19,10 @@ export const loginRequestSchema = z.object({
   password: z.string().min(1),
 })
 
+export const googleLoginRequestSchema = z.object({
+  id_token: z.string().min(1),
+})
+
 export const tokenResponseSchema = z.object({
   access_token: z.string(),
   token_type: z.string().default('bearer'),
@@ -37,5 +41,6 @@ export type RegisterRequest = z.infer<typeof registerRequestSchema>
 export type RegisterRole = z.infer<typeof registerRoleSchema>
 export type RegisterFormValues = z.infer<typeof registerFormSchema>
 export type LoginRequest = z.infer<typeof loginRequestSchema>
+export type GoogleLoginRequest = z.infer<typeof googleLoginRequestSchema>
 export type TokenResponse = z.infer<typeof tokenResponseSchema>
 export type RegisterResponse = z.infer<typeof userSchema>

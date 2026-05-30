@@ -1,6 +1,7 @@
 import { api } from '@/lib/api'
 import { parseApiError, parseResponse } from '@/lib/api-error'
 import {
+  googleLoginRequestSchema,
   registerRequestSchema,
   tokenResponseSchema,
   userSchema,
@@ -30,6 +31,16 @@ export const authApi = {
       const response = await api.post('/auth/login', body, {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       })
+      return parseResponse(tokenResponseSchema, response.data)
+    } catch (error) {
+      throw parseApiError(error)
+    }
+  },
+
+  async loginWithGoogle(idToken: string): Promise<TokenResponse> {
+    googleLoginRequestSchema.parse({ id_token: idToken })
+    try {
+      const response = await api.post('/auth/google', { id_token: idToken })
       return parseResponse(tokenResponseSchema, response.data)
     } catch (error) {
       throw parseApiError(error)

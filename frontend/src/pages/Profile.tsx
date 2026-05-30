@@ -222,15 +222,27 @@ export function ProfilePage() {
 
             <div className="space-y-3 rounded-lg border border-border bg-muted/30 p-4">
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Change password
+                {user.has_google_login ? 'Set or change password' : 'Change password'}
               </p>
+              {user.has_google_login ? (
+                <p className="text-sm text-muted-foreground">
+                  You sign in with Google. Add a password here if you also want to sign in
+                  with email and password.
+                </p>
+              ) : null}
               <div className="space-y-1.5">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password">
+                  {user.has_google_login ? 'New password' : 'Password'}
+                </Label>
                 <Input
                   id="password"
                   name="password"
                   type="password"
-                  placeholder="Leave blank to keep current"
+                  placeholder={
+                    user.has_google_login
+                      ? 'Choose a password'
+                      : 'Leave blank to keep current'
+                  }
                   aria-invalid={Boolean(fieldErrors.password)}
                   autoComplete="new-password"
                 />

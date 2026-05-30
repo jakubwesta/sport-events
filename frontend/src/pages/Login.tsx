@@ -1,8 +1,13 @@
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 
+import { AuthDivider } from '@/components/auth/auth-divider'
 import { AuthFormError } from '@/components/auth/auth-form-error'
 import { FormFieldError } from '@/components/auth/form-field-error'
+import {
+  GoogleSignInButton,
+  isGoogleSignInEnabled,
+} from '@/components/auth/google-sign-in-button'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -19,7 +24,17 @@ import { loginRequestSchema } from '@/schemas'
 
 export function LoginPage() {
   const navigate = useNavigate()
-  const { login, isSubmitting, isReady, error, isAuthenticated, clearError } = useAuth()
+  const {
+    login,
+    loginWithGoogle,
+    isSubmitting,
+    isReady,
+    error,
+    isAuthenticated,
+    clearError,
+  } = useAuth()
+
+  const showGoogleSignIn = isGoogleSignInEnabled()
 
   const { formRef, fieldErrors, formError, handleSubmit } = useAuthForm({
     schema: loginRequestSchema,
@@ -90,6 +105,21 @@ export function LoginPage() {
           >
             {!isReady ? 'Loading…' : isSubmitting ? 'Signing in…' : 'Sign in'}
           </Button>
+
+          {showGoogleSignIn ? (
+            <>
+              <AuthDivider />
+              <GoogleSignInButton
+                disabled={!isReady || isSubmitting}
+                onSuccess={async (idToken) => {
+                  clearError()
+                  await loginWithGoogle(idToken)
+                  navigate('/', { replace: true })
+                }}
+                onError={() => clearError()}
+              />
+            </>
+          ) : null}
         </form>
       </CardContent>
     </Card>

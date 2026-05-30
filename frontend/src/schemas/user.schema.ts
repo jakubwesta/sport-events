@@ -10,6 +10,7 @@ export const userSchema = z.object({
   last_name: z.string().nullable().optional(),
   birth_year: z.number().nullable().optional(),
   phone_number: z.string().nullable().optional(),
+  has_google_login: z.boolean().optional().default(false),
 })
 
 export const userUpdateSchema = z.object({
