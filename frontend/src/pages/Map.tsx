@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   CircleMarker,
   MapContainer,
@@ -50,17 +50,22 @@ function MapRecenter({ center, zoom }: { center: [number, number]; zoom: number 
   return null
 }
 
-function MapFocusSelected({ event }: { event: Event | null }) {
+function MapFocusSelected({
+  event,
+  enabled,
+  onFocused,
+}: {
+  event: Event | null
+  enabled: boolean
+  onFocused: () => void
+}) {
   const map = useMap()
 
   useEffect(() => {
-    if (!event?.location) return
-    map.flyTo(
-      [event.location.latitude, event.location.longitude],
-      Math.max(map.getZoom(), 14),
-      { animate: true },
-    )
-  }, [event?.id, map, event?.location])
+    if (!enabled || !event?.location) return
+    map.panTo([event.location.latitude, event.location.longitude], { animate: true })
+    onFocused()
+  }, [enabled, event?.id, map, event?.location, onFocused])
 
   return null
 }
@@ -113,6 +118,7 @@ export function MapPage() {
   const [cityFilter, setCityFilter] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [selectedEventId, setSelectedEventId] = useState<number | null>(null)
+  const [focusMapOnSelect, setFocusMapOnSelect] = useState(false)
   const markerColors = useThemeMarkerColors()
 
   const categoryId =
@@ -147,6 +153,8 @@ export function MapPage() {
     [filteredEvents, selectedEventId],
   )
 
+  const handleMapFocused = useCallback(() => setFocusMapOnSelect(false), [])
+
   const isLoading = eventsLoading || categoriesLoading
 
   return (
@@ -173,7 +181,10 @@ export function MapPage() {
             className="min-h-0 flex-1"
             events={filteredEvents}
             selectedEventId={selectedEvent?.id ?? null}
-            onSelectEvent={setSelectedEventId}
+            onSelectEvent={(id) => {
+              setSelectedEventId(id)
+              setFocusMapOnSelect(true)
+            }}
             isLoading={isLoading}
           />
         </aside>
@@ -207,14 +218,21 @@ export function MapPage() {
               />
               <MapResizeHandler />
               <MapRecenter center={mapCenter} zoom={mapZoom} />
-              <MapFocusSelected event={selectedEvent} />
+              <MapFocusSelected
+                event={selectedEvent}
+                enabled={focusMapOnSelect}
+                onFocused={handleMapFocused}
+              />
               {filteredEvents.map((event) => (
                 <EventMapMarker
                   key={event.id}
                   event={event}
                   colors={markerColors}
                   isSelected={selectedEvent?.id === event.id}
-                  onSelect={() => setSelectedEventId(event.id)}
+                  onSelect={() => {
+                    setFocusMapOnSelect(false)
+                    setSelectedEventId(event.id)
+                  }}
                 />
               ))}
             </MapContainer>

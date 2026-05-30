@@ -2,7 +2,8 @@ import { Calendar, MapPin, Tag } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { buttonVariants } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 import {
   formatEventDateTime,
   formatEventPrice,
@@ -54,9 +55,17 @@ export function MapEventPopup({ event }: MapEventPopupProps) {
         </li>
       </ul>
 
-      <Button asChild size="sm" className="w-full">
-        <Link to={`/events/${event.id}`}>View details</Link>
-      </Button>
+      <Link
+        to={`/events/${event.id}`}
+        data-slot="button"
+        data-variant="default"
+        className={cn(
+          buttonVariants({ variant: 'default', size: 'sm' }),
+          'map-event-popup-link w-full',
+        )}
+      >
+        View details
+      </Link>
     </div>
   )
 }
