@@ -13,6 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { DateTimePicker } from '@/components/ui/date-time-picker'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -35,6 +36,7 @@ import {
   eventCreateFormSchema,
   hasLocationInput,
   locationFormSchema,
+  toDatetimeLocalValue,
   toEventCreatePayload,
   toLocationCreatePayload,
   toLocationFormValues,
@@ -74,6 +76,8 @@ export function CreateEventPage() {
   const [status, setStatus] = useState<EventStatus>('PLANNING')
   const [categoryId, setCategoryId] = useState('')
   const [location, setLocation] = useState<LocationPickerValue>(emptyLocationPickerValue())
+  const [startDate, setStartDate] = useState<Date | undefined>(undefined)
+  const [deadlineDate, setDeadlineDate] = useState<Date | undefined>(undefined)
 
   useEffect(() => {
     if (!isReady) return
@@ -101,9 +105,9 @@ export function CreateEventPage() {
       event_type: eventType,
       status,
       price: getFormValue(form, 'price'),
-      start_date: getFormValue(form, 'start_date'),
+      start_date: startDate ? toDatetimeLocalValue(startDate) : '',
       duration: getFormValue(form, 'duration'),
-      registration_deadline: getFormValue(form, 'registration_deadline'),
+      registration_deadline: deadlineDate ? toDatetimeLocalValue(deadlineDate) : '',
       max_participants: getFormValue(form, 'max_participants'),
       min_team_size: getFormValue(form, 'min_team_size'),
       max_team_size: getFormValue(form, 'max_team_size'),
@@ -254,23 +258,23 @@ export function CreateEventPage() {
             />
 
             <div className="grid gap-5 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="start_date">Start date</Label>
-                <Input
-                  id="start_date"
-                  name="start_date"
-                  type="datetime-local"
-                  aria-invalid={Boolean(fieldErrors.start_date)}
+              <div className="space-y-1">
+                <DateTimePicker
+                  label="Start date"
+                  value={startDate}
+                  onChange={setStartDate}
+                  disabled={isCreating || isLoading}
+                  hasError={Boolean(fieldErrors.start_date)}
                 />
                 <FormFieldError message={fieldErrors.start_date} />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="registration_deadline">Registration deadline</Label>
-                <Input
-                  id="registration_deadline"
-                  name="registration_deadline"
-                  type="datetime-local"
-                  aria-invalid={Boolean(fieldErrors.registration_deadline)}
+              <div className="space-y-1">
+                <DateTimePicker
+                  label="Registration deadline"
+                  value={deadlineDate}
+                  onChange={setDeadlineDate}
+                  disabled={isCreating || isLoading}
+                  hasError={Boolean(fieldErrors.registration_deadline)}
                 />
                 <FormFieldError message={fieldErrors.registration_deadline} />
               </div>

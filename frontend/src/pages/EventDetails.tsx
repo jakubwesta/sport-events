@@ -18,6 +18,7 @@ import { LocationPicker } from '@/components/locations/location-picker'
 import { EventParticipationSection } from '@/components/events/event-participation-section'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { DateTimePicker } from '@/components/ui/date-time-picker'
 import {
   Card,
   CardContent,
@@ -203,9 +204,15 @@ function EventEditForm({ event, onSaved, onDeleted }: EventEditFormProps) {
   const [location, setLocation] = useState<LocationPickerValue>(
     locationToPickerValue(event.location),
   )
+  const [startDate, setStartDate] = useState<Date | undefined>(new Date(event.start_date))
+  const [deadlineDate, setDeadlineDate] = useState<Date | undefined>(
+    new Date(event.registration_deadline),
+  )
   useEffect(() => {
     setStatus(event.status)
     setLocation(locationToPickerValue(event.location))
+    setStartDate(new Date(event.start_date))
+    setDeadlineDate(new Date(event.registration_deadline))
   }, [event])
 
   const handleSubmit = async (formEvent: React.FormEvent<HTMLFormElement>) => {
@@ -220,8 +227,8 @@ function EventEditForm({ event, onSaved, onDeleted }: EventEditFormProps) {
       description: getFormValue(form, 'description'),
       status,
       price: getFormValue(form, 'price'),
-      start_date: getFormValue(form, 'start_date'),
-      registration_deadline: getFormValue(form, 'registration_deadline'),
+      start_date: startDate ? toDatetimeLocalValue(startDate) : '',
+      registration_deadline: deadlineDate ? toDatetimeLocalValue(deadlineDate) : '',
       is_published: true,
     })
 
@@ -318,25 +325,23 @@ function EventEditForm({ event, onSaved, onDeleted }: EventEditFormProps) {
       />
 
       <div className="grid gap-5 sm:grid-cols-2">
-        <div className="space-y-2">
-          <Label htmlFor="start_date">Start date</Label>
-          <Input
-            id="start_date"
-            name="start_date"
-            type="datetime-local"
-            defaultValue={toDatetimeLocalValue(event.start_date)}
-            aria-invalid={Boolean(fieldErrors.start_date)}
+        <div className="space-y-1">
+          <DateTimePicker
+            label="Start date"
+            value={startDate}
+            onChange={setStartDate}
+            disabled={isUpdating}
+            hasError={Boolean(fieldErrors.start_date)}
           />
           <FormFieldError message={fieldErrors.start_date} />
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="registration_deadline">Registration deadline</Label>
-          <Input
-            id="registration_deadline"
-            name="registration_deadline"
-            type="datetime-local"
-            defaultValue={toDatetimeLocalValue(event.registration_deadline)}
-            aria-invalid={Boolean(fieldErrors.registration_deadline)}
+        <div className="space-y-1">
+          <DateTimePicker
+            label="Registration deadline"
+            value={deadlineDate}
+            onChange={setDeadlineDate}
+            disabled={isUpdating}
+            hasError={Boolean(fieldErrors.registration_deadline)}
           />
           <FormFieldError message={fieldErrors.registration_deadline} />
         </div>
@@ -356,39 +361,43 @@ function EventEditForm({ event, onSaved, onDeleted }: EventEditFormProps) {
         <FormFieldError message={fieldErrors.price} />
       </div>
 
-      <div className="flex flex-wrap gap-3">
-        <Button type="submit" size="lg" className="flex-1 sm:flex-none" disabled={isUpdating || isDeleting}>
-          {isUpdating ? 'Saving…' : 'Save changes'}
-        </Button>
-        <Button asChild variant="outline" size="lg" className="flex-1 sm:flex-none gap-2">
-          <Link to={`/results?eventId=${event.id}`}>
-            <ExternalLink className="size-4" aria-hidden />
-            View results
-          </Link>
-        </Button>
-      </div>
-
-      <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 space-y-3">
-        <p className="text-sm font-medium text-destructive">Danger zone</p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap gap-3">
+          <Button
+            type="submit"
+            size="lg"
+            className="sm:flex-none"
+            disabled={isUpdating || isDeleting}
+          >
+            {isUpdating ? 'Saving…' : 'Save changes'}
+          </Button>
+          <Button asChild variant="outline" size="lg" className="gap-2 sm:flex-none">
+            <Link to={`/results?eventId=${event.id}`}>
+              <ExternalLink className="size-4" aria-hidden />
+              View results
+            </Link>
+          </Button>
+        </div>
         {confirmDelete ? (
-          <div className="flex flex-wrap items-center gap-3">
-            <p className="text-sm text-muted-foreground">Are you sure? This cannot be undone.</p>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm text-muted-foreground">Delete this event?</span>
             <Button
               type="button"
               variant="destructive"
-              size="sm"
+              size="lg"
               disabled={isDeleting}
               onClick={async () => {
                 await deleteEvent(event.id)
                 onDeleted()
               }}
             >
-              {isDeleting ? 'Deleting…' : 'Yes, delete event'}
+              {isDeleting ? 'Deleting…' : 'Yes, delete'}
             </Button>
             <Button
               type="button"
               variant="outline"
-              size="sm"
+              size="lg"
+              disabled={isDeleting}
               onClick={() => setConfirmDelete(false)}
             >
               Cancel
@@ -398,8 +407,9 @@ function EventEditForm({ event, onSaved, onDeleted }: EventEditFormProps) {
           <Button
             type="button"
             variant="outline"
-            size="sm"
+            size="lg"
             className="gap-2 border-destructive/40 text-destructive hover:bg-destructive/10"
+            disabled={isUpdating || isDeleting}
             onClick={() => setConfirmDelete(true)}
           >
             <Trash2 className="size-4" aria-hidden />
